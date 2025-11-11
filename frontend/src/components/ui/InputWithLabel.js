@@ -1,6 +1,7 @@
 import { useState } from "react";
 
-const Input = ({
+const InputWithLabel = ({
+   label,
    type = "text",
    placeholder = "",
    value = "",
@@ -61,6 +62,9 @@ const Input = ({
 
    return (
       <div className={wrapperClass}>
+      {label && (
+         <label className="form-label">{label}</label>
+      )}
       <input
          type={type}
          placeholder={placeholder}
@@ -82,4 +86,4 @@ const Input = ({
    );
 };
 
-export default Input;
+export default InputWithLabel;
