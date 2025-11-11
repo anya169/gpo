@@ -1,0 +1,12 @@
+.btn-outline-primary:hover {
+  background-color: black !important;
+  border-color: black !important;
+  color: white !important;
+}
+
+.btn-outline-primary {
+  background-color: none !important;
+  border: none !important;
+  color: black !important;
+}
+
