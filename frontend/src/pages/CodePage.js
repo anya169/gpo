@@ -5,15 +5,15 @@ import { PostService } from "../scripts/post-service";
 import Input from "../components/ui/Input";
 import Container from "../components/layout/Container";
 
-const HelloPage = () => {
+const CodePage = () => {
    const navigate = useNavigate();
-   const [email, setEmail] = useState("");
+   const [code, setCode] = useState("");
    const [errors, setErrors] = useState({});
    const [loading, setLoading] = useState(false);
    const [emailResult, setEmailResult] = useState("");
 
    const handleInputChange = (name, value, error) => {
-      setEmail(value);
+      setCode(value);
       setErrors(prev => ({
          ...prev,
          [name]: error
@@ -23,16 +23,18 @@ const HelloPage = () => {
    const handleInput = async () => {
       setLoading(true);
       try {
-         const result = await PostService.postData('http://localhost:8000/auth/send-code/', {
-            email: email
+         const result = await PostService.postData('http://localhost:8000/auth/verify-code/', {
+            code: code
          });
-         if (result && result.message){
-            navigate('/send-code', { 
+         if (result && result.message === "Успешная авторизация"){
+            navigate('/home', { 
                state: { 
-                  email: email,
+                  code: code,
                   user_name: result.user_name,
                } 
             });
+         } else {
+            setEmailResult(result.message);
          }
       } catch (error) {
          setEmailResult(error.data.detail);
@@ -41,21 +43,21 @@ const HelloPage = () => {
       }
    };
 
-   const handleRegistration = () => {
-      navigate('/registration');
+   const handleBack   = () => {
+      navigate('/');
    };
 
    return (
       <main className="d-flex flex-column min-vh-100 justify-content-center">
          <Container className="align-items-center">
-            <h1>Добро пожаловать в Concentration Meter</h1>
+            <h1>Проверьте свою почту</h1>
             
             <div className="input-group mt-3 justify-content-center">
                <Input
-                  type="email"
-                  placeholder="Введите адрес электронной почты..."
-                  name="email"
-                  value={email} 
+                  type="text"
+                  placeholder="Введите код с почты..."
+                  name="code"
+                  value={code} 
                   onChange={handleInputChange} 
                   required={true}
                   style={{ width: '400px' }} 
@@ -74,11 +76,11 @@ const HelloPage = () => {
                <div className="mt-3">{emailResult}</div>
             )
             }
-            <a onClick={handleRegistration} className="mt-2">Регистрация</a>
+            <a onClick={handleBack} className="mt-2">Вернуться</a>
          </Container>
       </main>
       
    );
 };
 
-export default HelloPage;
+export default CodePage;
