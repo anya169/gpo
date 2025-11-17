@@ -1,7 +1,31 @@
+.btn-outline-primary {
+  background-color: none !important;
+  border-color: black !important;
+  color: black !important;
+}
+
 .btn-outline-primary:hover{
   background-color: black !important;
   border-color: black !important;
   color: white !important;
+}
+
+.btn-outline-primary {
+  background-color: none !important;
+  border-color: black !important;
+  color: black !important;
+}
+
+.btn-primary {
+  background-color: black !important;
+  border-color: black !important;
+  color: white !important;
+}
+
+.btn-primary:hover{
+  background-color: white !important;
+  border-color: black !important;
+  color: black !important;
 }
 
 .btn-icon:hover {
@@ -16,8 +40,4 @@
   color: black !important;
 }
 
-.btn-outline-primary {
-  background-color: none !important;
-  border-color: black !important;
-  color: black !important;
-}
+
