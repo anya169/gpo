@@ -52,8 +52,8 @@ const RegistrationPage = () => {
    };
 
    return (
-      <main className="d-flex flex-column min-vh-100 justify-content-center">
-         <Container className="align-items-center">
+      <main className="d-flex flex-column min-vh-100">
+         <Container className="align-items-center justify-content-center">
             <h1>Регистрация</h1>
             
             <InputWithLabel

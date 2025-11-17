@@ -13,6 +13,7 @@ const HelloPage = () => {
    const [emailResult, setEmailResult] = useState("");
 
    const handleInputChange = (name, value, error) => {
+      setEmailResult("");
       setEmail(value);
       setErrors(prev => ({
          ...prev,
@@ -21,7 +22,15 @@ const HelloPage = () => {
    };
 
    const handleInput = async () => {
+      if (email === ""){
+         setEmailResult("Поле обязательно для заполнения");
+         return;
+      }
+      if (errors.email) {
+         return;
+      }
       setLoading(true);
+      setEmailResult("");
       try {
          const result = await PostService.postData('http://localhost:8000/auth/send-code/', {
             email: email
@@ -46,8 +55,8 @@ const HelloPage = () => {
    };
 
    return (
-      <main className="d-flex flex-column min-vh-100 justify-content-center">
-         <Container className="align-items-center">
+      <main className="d-flex flex-column min-vh-100 ">
+         <Container className="align-items-center justify-content-center">
             <h1>Добро пожаловать в Concentration Meter</h1>
             
             <div className="input-group mt-3 justify-content-center">
@@ -59,7 +68,6 @@ const HelloPage = () => {
                   onChange={handleInputChange} 
                   required={true}
                   style={{ width: '400px' }} 
-               
                />
                <Button 
                   onClick={handleInput}
