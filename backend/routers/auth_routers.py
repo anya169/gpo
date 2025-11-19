@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import get_session
-from service.auth import AuthService
+from services.auth import AuthService
 
 router = APIRouter()
 
@@ -23,8 +23,10 @@ class AuthResponse(BaseModel):
     message: str
     user_id: int = None
     name: str = None
+    email: str = None
+    access_token: str = None
+    token_type: str = None
     requires_registration: bool = False
-
 
 @router.post("/auth/send-code", response_model=AuthResponse)
 async def send_code(

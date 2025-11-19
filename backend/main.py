@@ -1,9 +1,7 @@
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers.auth_routers import router as auth_router
-from routers.concentration_routers import router as concentration_router
-from routers.neiry_routers import router as neiry_router
+from routers import auth_routers, concentration_routers, neiry_routers
 
 app = FastAPI()
 
@@ -15,9 +13,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth_router)
-app.include_router(concentration_router, prefix="/api/v1")
-app.include_router(neiry_router, prefix="/api/v1")
+app.include_router(auth_routers.router)
+app.include_router(concentration_routers.router, prefix="/api/v1")
+app.include_router(neiry_routers.router, prefix="/api/v1")
+
+@app.get("/api/v1/neiry/devices")
+async def get_available_devices():
+    """Получение списка доступных устройств"""
+    return {
+        "devices": [
+            {"type": "Band", "name": "Neiry Band"},
+            {"type": "BrainBit", "name": "BrainBit"},
+            {"type": "Noise", "name": "Demo Mode"}
+        ]
+    }
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

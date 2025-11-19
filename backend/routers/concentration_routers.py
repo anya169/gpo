@@ -6,9 +6,9 @@ import asyncio
 import json
 
 from db import get_session
-from service.session_service import SessionService
-from service.concentration_service import ConcentrationService
-from service.exercise_service import ExerciseService
+from services.session_service import SessionService
+from services.concentration_service import ConcentrationService
+from services.exercise_service import ExerciseService
 from websocket_manager import manager
 
 router = APIRouter()
@@ -187,7 +187,7 @@ async def handle_client_message(session_id: int, message: dict):
         exercise_type = message.get("exercise_type")
         if exercise_type:
             from db import get_session
-            from service.exercise_service import ExerciseService
+            from services.exercise_service import ExerciseService
             
             async for db in get_session():
                 service = ExerciseService(db)
@@ -203,7 +203,7 @@ async def handle_client_message(session_id: int, message: dict):
         exercise_id = message.get("exercise_id")
         if exercise_id:
             from db import get_session
-            from service.exercise_service import ExerciseService
+            from services.exercise_service import ExerciseService
             
             async for db in get_session():
                 service = ExerciseService(db)
@@ -218,7 +218,7 @@ async def handle_client_message(session_id: int, message: dict):
         exercise_id = message.get("exercise_id")
         if exercise_id:
             from db import get_session
-            from service.exercise_service import ExerciseService
+            from services.exercise_service import ExerciseService
             
             async for db in get_session():
                 service = ExerciseService(db)
@@ -232,7 +232,7 @@ async def handle_client_message(session_id: int, message: dict):
     elif message_type == "get_history":
         limit = message.get("limit", 100)
         from db import get_session
-        from service.concentration_service import ConcentrationService
+        from services.concentration_service import ConcentrationService
         
         async for db in get_session():
             service = ConcentrationService(db)
