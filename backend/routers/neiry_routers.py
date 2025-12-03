@@ -75,7 +75,7 @@ async def connect_neiry(
         
         return {"connected": success, "device_type": request.device_type}
 
-@router.post("/neiry/start-file-stream")
+@router.post("/neiry/file_stream")
 async def start_file_stream(
     session_id: int = 1,
     speed: float = 1.0,
@@ -93,50 +93,6 @@ async def start_file_stream(
         "total_data_points": len(file_data_service.get_all_data())
     }
 
-@router.post("/neiry/stop-file-stream")
-async def stop_file_stream(user_data: dict = Depends(get_current_user)):
-    """Остановка потоковой передачи данных из файла"""
-    await file_data_service.stop_streaming()
-    
-    return {
-        "success": True,
-        "message": "Потоковая передача данных остановлена"
-    }
-
-@router.get("/neiry/file-metrics")
-async def get_file_metrics(user_data: dict = Depends(get_current_user)):
-    """Получение текущих метрик из файла"""
-    metrics = await file_data_service.get_current_metrics()
-    
-    return {
-        "success": True,
-        "metrics": metrics
-    }
-
-@router.post("/neiry/set-file-speed")
-async def set_file_stream_speed(
-    speed: float,
-    user_data: dict = Depends(get_current_user)
-):
-    """Установка скорости потоковой передачи"""
-    file_data_service.set_stream_speed(speed)
-    
-    return {
-        "success": True,
-        "message": f"Скорость установлена: {speed} секунд между обновлениями",
-        "speed": speed
-    }
-
-@router.get("/neiry/file-data")
-async def get_all_file_data(user_data: dict = Depends(get_current_user)):
-    """Получение всех данных из файла"""
-    all_data = file_data_service.get_all_data()
-    
-    return {
-        "success": True,
-        "total_points": len(all_data),
-        "data": all_data
-    }
 
 @router.post("/neiry/disconnect")
 async def disconnect_neiry():
@@ -158,37 +114,6 @@ async def get_neiry_metrics():
     
     return metrics
 
-@router.websocket("/ws/neiry/realtime")
-async def websocket_neiry_realtime(websocket: WebSocket):
-    """WebSocket для реального времени данных (работает и с нейроинтерфейсом и с файлом)"""
-    await websocket.accept()
-    
-    try:
-        # Отправляем начальное состояние
-        initial_metrics = await get_neiry_metrics()
-        await websocket.send_json({
-            "type": "initial_state",
-            "data": {
-                "is_streaming": file_data_service.is_streaming or neiry_service.is_connected,
-                "current_metrics": initial_metrics
-            }
-        })
-        
-        # Ждем сообщений от клиента
-        while True:
-            data = await websocket.receive_text()
-            
-            try:
-                message = json.loads(data)
-                await handle_websocket_message(message, websocket)
-            except json.JSONDecodeError:
-                await websocket.send_json({
-                    "type": "error",
-                    "message": "Неверный формат JSON"
-                })
-                
-    except WebSocketDisconnect:
-        print("WebSocket отключен")
 
 async def handle_websocket_message(message: dict, websocket: WebSocket):
     """Обработка сообщений от клиента"""

@@ -28,7 +28,7 @@ class AuthResponse(BaseModel):
     token_type: str = None
     requires_registration: bool = False
 
-@router.post("/auth/send-code", response_model=AuthResponse)
+@router.post("/auth/send-code/", response_model=AuthResponse)
 async def send_code(
     request: SendCodeRequest,
     db: AsyncSession = Depends(get_session)
@@ -37,7 +37,7 @@ async def send_code(
     result = await auth_service.send_code(request.email)
     return AuthResponse(success=True, message=result["message"])
 
-@router.post("/auth/verify-code", response_model=AuthResponse)
+@router.post("/auth/verify-code/", response_model=AuthResponse)
 async def verify_code(
     request: VerifyCodeRequest,
     db: AsyncSession = Depends(get_session)
@@ -46,7 +46,7 @@ async def verify_code(
     result = await auth_service.verify_code(request.email, request.code)
     return AuthResponse(**result)
 
-@router.post("/auth/register", response_model=AuthResponse)
+@router.post("/auth/register/", response_model=AuthResponse)
 async def register_user(
     request: RegisterRequest,
     db: AsyncSession = Depends(get_session)
