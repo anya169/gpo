@@ -8,79 +8,56 @@ from websocket_manager import manager
 
 router = APIRouter()
 
-# WebSocket для файловых данных
 @router.websocket("/ws/neiry/file-stream")
 async def websocket_file_stream(websocket: WebSocket):
-    """WebSocket для передачи данных из файла Малахова.xlsx"""
-    
-    # Проверяем origin (важно для CORS)
-    origin = websocket.headers.get("origin", "")
-    allowed_origins = ["http://localhost:3000", "http://127.0.0.1:3000", "null"]
-    
-    if origin not in allowed_origins and origin:
-        print(f"Blocked connection from origin: {origin}")
-        await websocket.close(code=1008)
-        return
+    """WebSocket для передачи данных из файла"""
     
     await websocket.accept()
+    print("WebSocket connected")
+    
+    # Состояние потока
+    is_streaming = False
+    stream_task = None
     
     try:
-        print("File stream WebSocket connected")
-        
         await websocket.send_json({
             "type": "connection_established",
-            "message": "File stream WebSocket connected",
+            "message": "Connected to file stream",
             "timestamp": datetime.now().isoformat()
         })
         
-        is_streaming = False
-        stream_speed = 1.0
-        
+        # Основной цикл обработки сообщений
         while True:
             try:
+                # Получаем сообщение (блокирующий вызов)
                 data = await websocket.receive_text()
+                
+                # Обрабатываем сообщение
                 message = json.loads(data)
                 message_type = message.get("type")
                 
                 if message_type == "start_stream":
                     if not is_streaming:
                         is_streaming = True
-                        stream_speed = message.get("speed", 1.0)
+                        speed = message.get("speed", 1.0)
+                        
+                        # Запускаем поток
+                        stream_task = asyncio.create_task(send_data_stream(websocket, speed))
                         
                         await websocket.send_json({
                             "type": "stream_started",
-                            "message": "Data stream started",
-                            "speed": stream_speed,
+                            "speed": speed,
                             "timestamp": datetime.now().isoformat()
                         })
-                        
-                        # Запускаем поток данных
-                        async def stream_data():
-                            index = 0
-                            while is_streaming:
-                                if index >= len(file_data_service.data_points):
-                                    index = 0
-                                
-                                data_point = file_data_service.data_points[index]
-                                
-                                await websocket.send_json({
-                                    "type": "concentration_data",
-                                    "data": data_point,
-                                    "index": index,
-                                    "total": len(file_data_service.data_points),
-                                    "timestamp": datetime.now().isoformat()
-                                })
-                                
-                                index += 1
-                                await asyncio.sleep(stream_speed)
-                        
-                        asyncio.create_task(stream_data())
                 
                 elif message_type == "stop_stream":
                     is_streaming = False
+                    if stream_task:
+                        stream_task.cancel()
+                        stream_task = None
+                    
                     await websocket.send_json({
                         "type": "stream_stopped",
-                        "message": "Data stream stopped",
                         "timestamp": datetime.now().isoformat()
                     })
                 
@@ -90,29 +67,51 @@ async def websocket_file_stream(websocket: WebSocket):
                         "timestamp": datetime.now().isoformat()
                     })
                 
-                elif message_type == "get_metrics":
-                    metrics = await file_data_service.get_current_metrics()
-                    await websocket.send_json({
-                        "type": "current_metrics",
-                        "data": metrics,
-                        "timestamp": datetime.now().isoformat()
-                    })
-                
             except json.JSONDecodeError:
                 await websocket.send_json({
                     "type": "error",
-                    "message": "Invalid JSON format",
+                    "message": "Invalid JSON",
                     "timestamp": datetime.now().isoformat()
                 })
-            except Exception as e:
-                print(f"Error processing message: {e}")
-                
+    
     except WebSocketDisconnect:
-        print("File stream WebSocket disconnected")
-        is_streaming = False
+        print("WebSocket disconnected by client")
     except Exception as e:
         print(f"WebSocket error: {e}")
+    finally:
+        # Всегда очищаем ресурсы
         is_streaming = False
+        if stream_task:
+            stream_task.cancel()
+        print("WebSocket connection closed")
+
+async def send_data_stream(websocket: WebSocket, speed: float):
+    """Отправляет поток данных"""
+    try:
+        index = 0
+        data_points = file_data_service.data_points
+        
+        while True:
+            if index >= len(data_points):
+                index = 0
+            
+            data_point = data_points[index]
+            
+            await websocket.send_json({
+                "type": "concentration_data",
+                "data": data_point,
+                "index": index,
+                "total": len(data_points),
+                "timestamp": datetime.now().isoformat()
+            })
+            
+            index += 1
+            await asyncio.sleep(speed)
+            
+    except asyncio.CancelledError:
+        print("Data stream cancelled")
+    except Exception as e:
+        print(f"Error in data stream: {e}")
 
 # WebSocket для сессий (из concentration_routers.py)
 @router.websocket("/ws/session/{session_id}")
