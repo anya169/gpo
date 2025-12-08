@@ -9,6 +9,7 @@ import CalibrationPage from './pages/CalibrationPage';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import SessionPage from './pages/SessionPage'
 
 
 function App() {
@@ -18,9 +19,10 @@ function App() {
         <Route path="/" element={<HelloPage />} />
         <Route path="/registration" element={<RegistrationPage />} />
         <Route path="/check_code" element={<CodePage />} />
-        <Route path="/breathe" element={<BreathingPracticePage />} />
+        <Route path="/breathing-exercise" element={<BreathingPracticePage />} />
         <Route path="/calibrate" element={<CalibrationPage />} />
-        <Route path="/activity" element={<PhysicalActivityPage />} />
+        <Route path="/movement-exercise" element={<PhysicalActivityPage />} />
+        <Route path="/session" element={<SessionPage />} />
       </Routes>
     </Router>
   );
