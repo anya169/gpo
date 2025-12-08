@@ -20,7 +20,7 @@ const PhysicalActivityPage = () => {
 
    const handleToggle = () => {
       if (button === "Завершить"){
-         navigate("/");
+         navigate("/session");
       }
       const currentstep = steps[step];
       setText(currentstep.text);

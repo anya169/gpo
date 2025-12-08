@@ -84,7 +84,7 @@ const BreathingPracticePage = () => {
    }, []);
 
    const handleToggle = () => {
-      navigate("/");
+      navigate("/session");
    };
 
    return (
