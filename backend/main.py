@@ -9,14 +9,13 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Создаем middleware для CORS с более гибкими настройками
 middleware = [
     Middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
-        allow_headers=["*"],  # Разрешаем все заголовки
+        allow_headers=["*"], 
         expose_headers=["*"]
     )
 ]
@@ -30,7 +29,6 @@ app = FastAPI(
     openapi_url="/openapi.json"
 )
 
-# Добавим свой middleware для логирования
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     logger.info(f"Request: {request.method} {request.url}")
@@ -53,10 +51,12 @@ async def options_handler(path: str):
 # Подключаем роутеры
 from routers import auth_routers, concentration_routers
 from routers.websocket_routers import router as websocket_router
+from routers.routers import router as profile_router
 
 app.include_router(auth_routers.router, prefix="/auth", tags=["auth"])
 app.include_router(concentration_routers.router, prefix="/api/v1", tags=["concentration"])
 app.include_router(websocket_router)
+app.include_router(profile_router)
 
 
 if __name__ == "__main__":

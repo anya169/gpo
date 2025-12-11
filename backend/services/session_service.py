@@ -1,3 +1,4 @@
+# session_service.py (обновленная версия)
 from datetime import datetime
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -5,10 +6,12 @@ from sqlalchemy import select, func
 from typing import List, Dict, Any
 
 from models import Session, Concentration, Exercise
+from utils.statistics_utils import StatisticsUtils
 
 class SessionService:
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.utils = StatisticsUtils()
 
     async def create_session(self, user_id: int) -> Dict[str, Any]:
         stmt = select(Session).where(
@@ -55,7 +58,8 @@ class SessionService:
         }
 
     async def _calculate_session_stats(self, session_id: int) -> Dict[str, Any]:
-
+        """Вычисляет статистику сессии"""
+        # Средняя концентрация
         avg_stmt = select(func.avg(Concentration.value)).where(
             Concentration.session_id == session_id
         )
@@ -78,20 +82,24 @@ class SessionService:
         completed_count = completed_result.scalar() or 0
 
         # Длительность сессии
-        session_stmt = select(Session.start_time).where(Session.session_id == session_id)
+        session_stmt = select(Session.start_time, Session.end_time).where(
+            Session.session_id == session_id
+        )
         session_result = await self.db.execute(session_stmt)
-        start_time = session_result.scalar()
+        session_data = session_result.first()
         
         duration_minutes = 0
-        if start_time:
-            duration = datetime.now() - start_time
-            duration_minutes = round(duration.total_seconds() / 60, 2)
+        if session_data:
+            start_time, end_time = session_data
+            duration_minutes = self.utils.calculate_session_duration(
+                start_time, end_time or datetime.now()
+            )
 
         return {
             "avg_concentration": round(avg_concentration, 2),
             "focus_dips_count": exercises_count,
             "exercises_completed": completed_count,
-            "duration_minutes": duration_minutes
+            "duration_minutes": round(duration_minutes, 2)
         }
 
     async def get_active_session(self, user_id: int) -> Dict[str, Any]:

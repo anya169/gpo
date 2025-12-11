@@ -1,3 +1,4 @@
+# exercise_service.py (обновленная версия)
 from datetime import datetime
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -5,13 +6,15 @@ from sqlalchemy import select
 from typing import List, Dict, Any
 
 from models import Exercise, Session, Concentration
+from utils.statistics_utils import StatisticsUtils
 
 class ExerciseService:
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.utils = StatisticsUtils()
 
     async def start_exercise(self, session_id: int, exercise_type: str) -> Dict:
-
+        # Получаем текущую концентрацию
         conc_stmt = select(Concentration.value).where(
             Concentration.session_id == session_id
         ).order_by(Concentration.time.desc()).limit(1)
@@ -55,15 +58,9 @@ class ExerciseService:
 
         await self.db.commit()
 
-        effectiveness = "neutral"
-        if exercise.concentration_before and concentration_after:
-            improvement = concentration_after - exercise.concentration_before
-            if improvement > 10:  
-                effectiveness = "high"
-            elif improvement > 5:  
-                effectiveness = "medium"
-            elif improvement < -5:  
-                effectiveness = "low"
+        effectiveness = self.utils.calculate_exercise_effectiveness(
+            exercise.concentration_before, concentration_after
+        )
 
         return {
             "success": True, 
@@ -87,16 +84,17 @@ class ExerciseService:
         return {"success": True, "message": "Упражнение пропущено"}
 
     def get_available_exercises(self) -> List[Dict]:
+        """Возвращает список доступных упражнений"""
         return [
             {
                 "type": "breathing",
                 "name": "Дыхательное упражнение",
-                "description": "Глубокое дыхание для восстановления фокуса. Сделайте глубокий вдох на 4 секунды, задержите дыхание на 7 секунд, выдохните на 8 секунд.",
-                "duration": 60,  # секунды
+                "description": "Глубокое дыхание для восстановления фокуса",
+                "duration": 60,
                 "instructions": [
                     "Сядьте удобно и закройте глаза",
                     "Сделайте глубокий вдох через нос на 4 секунды",
-                    "Задержите дыхание на 7 секунд", 
+                    "Задержите дыхание на 7 секунды", 
                     "Медленно выдохните через рот на 8 секунд",
                     "Повторите 5-7 раз"
                 ]
@@ -104,8 +102,8 @@ class ExerciseService:
             {
                 "type": "physical", 
                 "name": "Физическое упражнение",
-                "description": "Легкая разминка для улучшения кровообращения и восстановления концентрации.",
-                "duration": 90,  # секунды
+                "description": "Легкая разминка для улучшения кровообращения",
+                "duration": 90,
                 "instructions": [
                     "Встаньте и потянитесь руками вверх",
                     "Сделайте 5-10 вращений плечами",
@@ -162,14 +160,10 @@ class ExerciseService:
             improvement = exercise.concentration_after - exercise.concentration_before
             improvements.append(improvement)
             
-            if improvement > 10:
-                effectiveness_count["high"] += 1
-            elif improvement > 5:
-                effectiveness_count["medium"] += 1
-            elif improvement < -5:
-                effectiveness_count["low"] += 1
-            else:
-                effectiveness_count["neutral"] += 1
+            effectiveness = self.utils.calculate_exercise_effectiveness(
+                exercise.concentration_before, exercise.concentration_after
+            )
+            effectiveness_count[effectiveness] += 1
         
         return {
             "total_exercises": len(exercises),
