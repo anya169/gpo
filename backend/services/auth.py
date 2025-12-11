@@ -19,7 +19,6 @@ class AuthService:
 
     @staticmethod
     def generate_code() -> str:
-        """Генерация 6-значного кода"""
         return str(secrets.randbelow(1000000)).zfill(6)
 
     async def send_code(self, email: str) -> dict:
@@ -64,7 +63,6 @@ class AuthService:
                 )
 
     def _send_email(self, email_to: str, code: str) -> bool:
-        """Отправка email с кодом (синхронный метод)"""
         smtp_host = SMTP_CONFIG["HOST"]
         smtp_port = SMTP_CONFIG["PORT"]
         smtp_user = SMTP_CONFIG["USER"]
@@ -94,7 +92,6 @@ class AuthService:
             return False
 
     async def verify_code(self, email: str, code: str) -> dict:
-        """Проверка кода и авторизация/регистрация пользователя"""
         email = email.lower().strip()
         code = code.strip()
 

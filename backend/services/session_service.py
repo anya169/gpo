@@ -116,7 +116,6 @@ class SessionService:
         }
 
     async def get_user_sessions(self, user_id: int, limit: int = 10) -> List[Dict[str, Any]]:
-        """Получение истории сессий пользователя"""
         stmt = select(Session).where(
             Session.user_id == user_id
         ).order_by(Session.start_time.desc()).limit(limit)

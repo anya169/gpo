@@ -32,7 +32,6 @@ class ConcentrationService:
         }
 
     async def _check_concentration_dip(self, session_id: int, current_value: float) -> bool:
-        """Проверка падения концентрации ниже базовой линии"""
         stmt = select(Session.baseline_concentration).where(Session.session_id == session_id)
         result = await self.db.execute(stmt)
         baseline = result.scalar()

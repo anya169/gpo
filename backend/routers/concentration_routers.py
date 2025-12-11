@@ -58,7 +58,6 @@ async def add_concentration_data(
     service = ConcentrationService(db)
     result = await service.add_concentration_data(data.session_id, data.value)
     
-    #данные отправляются по вебсокету
     await manager.send_concentration_data(data.session_id, {
         "value": data.value,
         "timestamp": result["timestamp"].isoformat(),

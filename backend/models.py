@@ -18,7 +18,7 @@ class Session(Base):
     end_time = Column(DateTime)
     avg_concentration = Column(Float) 
     focus_dips_count = Column(Integer)
-    baseline_concentration = Column(Float)
+    baseline_concentration = Column(Float, nullable=True)
     is_active = Column(Boolean, default=True)
 
     user = relationship("User", backref="sessions") 
@@ -53,3 +53,4 @@ class AuthCode(Base):
     code = Column(Text, nullable=False)
     created_at = Column(DateTime, default=func.now())
     is_used = Column(Boolean, default=False)
+

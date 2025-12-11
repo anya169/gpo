@@ -58,11 +58,11 @@ class ExerciseService:
         effectiveness = "neutral"
         if exercise.concentration_before and concentration_after:
             improvement = concentration_after - exercise.concentration_before
-            if improvement > 10:  # Улучшение более чем на 10%
+            if improvement > 10:  
                 effectiveness = "high"
-            elif improvement > 5:  # Улучшение более чем на 5%
+            elif improvement > 5:  
                 effectiveness = "medium"
-            elif improvement < -5:  # Ухудшение более чем на 5%
+            elif improvement < -5:  
                 effectiveness = "low"
 
         return {

@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Real-time Concentration Monitor</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: #f5f5f5; 
+        }
+        
+        .container { 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 8px 16px;
+            background: #4a6fa5;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: #3a5a80;
+        }
+        
+        button.connected {
+            background: #28a745;
+        }
+        
+        button.disconnected {
+            background: #dc3545;
+        }
+        
+        button.streaming {
+            background: #17a2b8;
+        }
+        
+        .main-content {
+            display: flex;
+            gap: 20px;
+            height: 75vh;
+        }
+        
+        .chart-section {
+            flex: 3;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chart-header {
+            margin-bottom: 20px;
+        }
+        
+        .chart-container {
+            flex: 1;
+            position: relative;
+        }
+        
+        .log-section {
+            flex: 1;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            min-width: 300px;
+        }
+        
+        .log-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        #log {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+            margin: 0;
+            list-style: none;
+        }
+        
+        .log-entry {
+            padding: 10px 20px;
+            border-bottom: 1px solid #f5f5f5;
+            font-size: 13px;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+        
+        .log-entry:hover {
+            background: #f8f9fa;
+        }
+        
+        .log-time {
+            color: #6c757d;
+            font-size: 12px;
+            min-width: 70px;
+        }
+        
+        .log-message {
+            flex: 1;
+            word-break: break-word;
+        }
+        
+        .log-info { color: #0066cc; }
+        .log-success { color: #28a745; }
+        .log-error { color: #dc3545; }
+        .log-warning { color: #ffc107; }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .connected .status-indicator { background: #28a745; }
+        .disconnected .status-indicator { background: #dc3545; }
+        .streaming .status-indicator { background: #17a2b8; animation: pulse 2s infinite; }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .current-value {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .current-value .label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .current-value .value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #0066cc;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 style="margin: 0;">Real-time Concentration Monitor</h1>
+            <div class="controls">
+                <button id="connectBtn" onclick="connectWebSocket()"> Connect</button>
+                <button id="streamBtn" onclick="startStream()" disabled>Start Stream</button>
+                <button onclick="stopStream()" disabled>Stop</button>
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <label>Speed:</label>
+                    <input type="number" id="speed" value="1" min="0.1" max="5" step="0.1" style="width: 50px; padding: 4px;">
+                    <button onclick="updateSpeed()"></button>
+                </div>
+                <button onclick="clearLog()">Clear Log</button>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="chart-section">
+                <div class="chart-header">
+                    <h2 style="margin: 0;">Concentration Level Over Time</h2>
+                    <div id="status" style="color: #666; font-size: 14px; margin-top: 5px;">
+                        <span class="status-indicator"></span> Disconnected
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="concentrationChart"></canvas>
+                </div>
+                
+                <div class="current-value">
+                    <div class="label">Current Concentration</div>
+                    <div class="value" id="currentConcentration">--</div>
+                </div>
+            </div>
+            
+            <div class="log-section">
+                <div class="log-header">
+                    <h3 style="margin: 0;">Activity Log</h3>
+                    <span id="logCount" style="font-size: 12px; color: #666;">0 messages</span>
+                </div>
+                <ul id="log"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let isStreaming = false;
+        let chart = null;
+        let logCount = 0;
+        
+        const chartConfig = {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Concentration',
+                    data: [],
+                    borderColor: 'rgb(54, 162, 235)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 0
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            maxTicksLimit: 10,
+                            autoSkip: true
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        min: 0,
+                        max: 100,
+                        grid: {
+                            color: 'rgba(0,0,0,0.05)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'nearest'
+                }
+            }
+        };
+        
+        function log(message, type = 'info') {
+            const logList = document.getElementById('log');
+            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+            
+            const li = document.createElement('li');
+            li.className = 'log-entry';
+            li.innerHTML = `
+                <span class="log-time">${time}</span>
+                <span class="log-message log-${type}">${message}</span>
+            `;
+            
+            logList.prepend(li); 
+            logCount++;
+            document.getElementById('logCount').textContent = `${logCount} messages`;
+            
+            if (logList.children.length > 100) {
+                logList.removeChild(logList.lastChild);
+            }
+        }
+        
+        function updateStatus(status, type = 'disconnected') {
+            const statusDiv = document.getElementById('status');
+            const statusIndicator = statusDiv.querySelector('.status-indicator');
+            const connectBtn = document.getElementById('connectBtn');
+            const streamBtn = document.getElementById('streamBtn');
+            
+            statusDiv.innerHTML = `<span class="status-indicator ${type}"></span> ${status}`;
+            
+            connectBtn.textContent = type === 'connected' || type === 'streaming' ? '🔗 Connected' : '🔗 Connect';
+            connectBtn.className = type;
+            
+            streamBtn.disabled = type !== 'connected' && type !== 'streaming';
+            
+            if (type === 'streaming') {
+                streamBtn.textContent = 'Pause';
+                streamBtn.onclick = stopStream;
+            } else {
+                streamBtn.textContent = 'Start Stream';
+                streamBtn.onclick = startStream;
+            }
+        }
+        
+        function connectWebSocket() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                log('Already connected to WebSocket', 'info');
+                return;
+            }
+            
+            log('Connecting to WebSocket server...', 'info');
+            ws = new WebSocket('ws://localhost:8000/ws/neiry/file-stream');
+            
+            ws.onopen = () => {
+                updateStatus('Connected', 'connected');
+                log(' WebSocket connection established', 'success');
+            };
+            
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    switch(data.type) {
+                        case 'concentration_data':
+                            updateChart(data.data);
+                            log(`New data: ${data.data.concentration?.toFixed(1)}% concentration`, 'info');
+                            break;
+                        case 'stream_started':
+                            isStreaming = true;
+                            updateStatus(`Streaming (${data.speed}s)`, 'streaming');
+                            log(`🎬 Real-time stream started`, 'success');
+                            break;
+                        case 'stream_stopped':
+                            isStreaming = false;
+                            updateStatus('Connected (stream stopped)', 'connected');
+                            log('⏹️ Stream stopped', 'info');
+                            break;
+                        case 'connection_established':
+                            log(data.message, 'success');
+                            break;
+                        case 'speed_updated':
+                            log(`Speed updated to ${data.speed}s`, 'success');
+                            break;
+                        default:
+                            log(`Received: ${data.type}`, 'info');
+                    }
+                } catch (e) {
+                    log(`Error parsing data: ${e.message}`, 'error');
+                }
+            };
+            
+            ws.onerror = (error) => {
+                log('WebSocket connection error', 'error');
+                updateStatus('Connection error', 'disconnected');
+            };
+            
+            ws.onclose = () => {
+                log('WebSocket disconnected', 'info');
+                updateStatus('Disconnected', 'disconnected');
+                isStreaming = false;
+            };
+        }
+        
+        function startStream() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('Not connected to WebSocket', 'error');
+                return;
+            }
+            
+            const speed = document.getElementById('speed').value;
+            ws.send(JSON.stringify({
+                type: 'start_stream',
+                speed: parseFloat(speed),
+                session_id: 1
+            }));
+            
+            log(`Starting stream (${speed}s interval)...`, 'info');
+        }
+        
+        function stopStream() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            
+            ws.send(JSON.stringify({ type: 'stop_stream' }));
+            log('Stopping stream...', 'info');
+        }
+        
+        function updateSpeed() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('Not connected', 'error');
+                return;
+            }
+            
+            const speed = document.getElementById('speed').value;
+            ws.send(JSON.stringify({
+                type: 'set_speed',
+                speed: parseFloat(speed)
+            }));
+        }
+        
+        function updateChart(data) {
+            if (!chart) {
+                const ctx = document.getElementById('concentrationChart').getContext('2d');
+                chart = new Chart(ctx, chartConfig);
+            }
+            
+            const concentration = data.concentration || 0;
+            document.getElementById('currentConcentration').textContent = concentration.toFixed(1) + '%';
+            
+            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+            chart.data.labels.push(time);
+            chart.data.datasets[0].data.push(concentration);
+            
+            const maxPoints = 60;
+            if (chart.data.labels.length > maxPoints) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+            }
+            
+            chart.update('none'); 
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+            logCount = 0;
+            document.getElementById('logCount').textContent = '0 messages';
+            log('Log cleared', 'info');
+        }
+        
+        window.onload = () => {
+            log('Page loaded', 'info');
+            
+            setTimeout(() => {
+                connectWebSocket();
+                
+                setTimeout(() => {
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        startStream();
+                    }
+                }, 2000);
+            }, 1000);
+        };
+        
+        setInterval(() => {
+            if (ws && ws.readyState === WebSocket.CLOSED) {
+                log('Attempting to reconnect...', 'warning');
+                connectWebSocket();
+            }
+        }, 10000);
+    </script>
+</body>
+</html>
